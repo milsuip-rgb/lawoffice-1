@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LayoutDashboard, FileText, Users, Settings, LogOut, Plus, Edit2, Trash2, Search, MessageSquare, Clock, Calendar as CalendarIcon, AlertTriangle, Monitor, X, Link as LinkIcon, Image as ImageIcon, Upload } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, Settings, LogOut, Plus, Edit2, Trash2, Search, MessageSquare, Clock, Calendar as CalendarIcon, AlertTriangle, Monitor, X, Link as LinkIcon, Image as ImageIcon, Upload, RotateCcw } from 'lucide-react';
 import { useFirestore, initialCases, initialLawyers, DEFAULT_POPUP, DEFAULT_REVIEWS } from '../hooks/useFirestore';
 import { compressImage } from '../utils/imageCompressor';
 import { toast } from 'sonner';
@@ -66,6 +66,7 @@ export default function Admin() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lawyerFileInputRef = useRef<HTMLInputElement>(null);
   const caseFileInputRef = useRef<HTMLInputElement>(null);
+  const documentImagesInputRef = useRef<HTMLInputElement>(null);
   const reviewFileInputRef = useRef<HTMLInputElement>(null);
 
   // Success Cases State
@@ -224,6 +225,22 @@ export default function Admin() {
     setIsCaseModalOpen(true);
   };
 
+  const handleRestoreCases = async () => {
+    if (!window.confirm('기존의 13개 성공사례를 복원하시겠습니까? (이미 존재하는 경우 덮어씌워집니다)')) return;
+    
+    const toastId = toast.loading('성공사례 복원 중...');
+    try {
+      for (const item of initialCases) {
+        await saveCase(item);
+      }
+      toast.dismiss(toastId);
+      toast.success('성공사례 13건이 복원되었습니다.');
+    } catch (error) {
+      toast.dismiss(toastId);
+      toast.error('복원 중 오류가 발생했습니다.');
+    }
+  };
+
   const handleCaseImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -234,6 +251,34 @@ export default function Admin() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleDocumentImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newImages: string[] = [...(editingCase.documentImages || [])];
+      let processedCount = 0;
+
+      Array.from(files).forEach((file: File) => {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const compressed = await compressImage(reader.result as string);
+          newImages.push(compressed);
+          processedCount++;
+          
+          if (processedCount === files.length) {
+            setEditingCase({ ...editingCase, documentImages: newImages });
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const handleRemoveDocumentImage = (index: number) => {
+    const newImages = [...(editingCase.documentImages || [])];
+    newImages.splice(index, 1);
+    setEditingCase({ ...editingCase, documentImages: newImages });
   };
 
   const handleDeleteCase = async (id: any) => {
@@ -472,6 +517,15 @@ export default function Admin() {
                 className="bg-[#141b29] border border-white/10 rounded-xl pl-10 pr-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors w-64"
               />
             </div>
+            {activeTab === 'cases' && (
+              <button 
+                onClick={handleRestoreCases}
+                className="bg-red-600/10 hover:bg-red-600/20 text-red-500 px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all border border-red-500/20 shadow-lg shadow-red-500/5 active:scale-95"
+              >
+                <RotateCcw className="w-5 h-5" />
+                <span>기본 데이터 복원</span>
+              </button>
+            )}
             <button 
               onClick={() => {
                 if (activeTab === 'cases') handleAddCase();
@@ -497,6 +551,20 @@ export default function Admin() {
                   <span>+2 건</span>
                   <span className="text-slate-500">이번 달</span>
                 </div>
+              </div>
+
+              <div className="bg-[#0a0f18] border border-white/5 p-6 rounded-2xl flex flex-col justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm mb-1">데이터 관리</p>
+                  <h3 className="text-xl font-bold text-white">성공사례 복원</h3>
+                </div>
+                <button 
+                  onClick={handleRestoreCases}
+                  className="mt-4 w-full bg-red-600/10 hover:bg-red-600/20 text-red-500 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-red-500/20"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>13개 기본 사례 복원하기</span>
+                </button>
               </div>
               <div className="bg-[#0a0f18] border border-white/5 p-6 rounded-2xl">
                 <p className="text-slate-400 text-sm mb-1">소속 변호사</p>
@@ -1020,7 +1088,7 @@ export default function Admin() {
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">사건 상황</label>
                       <textarea 
-                        value={editingCase.situation}
+                        value={editingCase.situation || ''}
                         onChange={(e) => setEditingCase({ ...editingCase, situation: e.target.value })}
                         className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors h-24 resize-none"
                       />
@@ -1028,18 +1096,44 @@ export default function Admin() {
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">위기 상황</label>
                       <textarea 
-                        value={editingCase.dangerSituation}
+                        value={editingCase.dangerSituation || ''}
                         onChange={(e) => setEditingCase({ ...editingCase, dangerSituation: e.target.value })}
                         className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors h-24 resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">핵심 쟁점</label>
+                      <textarea 
+                        value={editingCase.issue || (Array.isArray(editingCase.issues) ? editingCase.issues.join('\n') : editingCase.issues) || ''}
+                        onChange={(e) => setEditingCase({ ...editingCase, issue: e.target.value, issues: e.target.value.split('\n').filter((s: string) => s.trim() !== '') })}
+                        className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors h-24 resize-none"
+                        placeholder="한 줄에 하나씩 입력하세요"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">대응 전략</label>
+                      <textarea 
+                        value={editingCase.strategy || (Array.isArray(editingCase.strategy) ? editingCase.strategy.join('\n') : editingCase.strategy) || ''}
+                        onChange={(e) => setEditingCase({ ...editingCase, strategy: e.target.value })}
+                        className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors h-24 resize-none"
+                        placeholder="한 줄에 하나씩 입력하세요"
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-400 mb-2">최종 결과</label>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">결과 (요약)</label>
                       <textarea 
-                        value={editingCase.finalResult}
+                        value={editingCase.result || ''}
+                        onChange={(e) => setEditingCase({ ...editingCase, result: e.target.value })}
+                        className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors h-24 resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">최종 결과 (상세)</label>
+                      <textarea 
+                        value={editingCase.finalResult || ''}
                         onChange={(e) => setEditingCase({ ...editingCase, finalResult: e.target.value })}
                         className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors h-24 resize-none"
                       />
@@ -1074,6 +1168,44 @@ export default function Admin() {
                           </div>
                         </div>
                       )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2 flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <FileText className="w-4 h-4" />
+                          결정문 이미지 추가
+                        </span>
+                        <button 
+                          type="button"
+                          onClick={() => documentImagesInputRef.current?.click()}
+                          className="text-xs text-red-500 hover:underline flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" />
+                          이미지 추가
+                        </button>
+                      </label>
+                      <input 
+                        type="file" 
+                        ref={documentImagesInputRef}
+                        onChange={handleDocumentImageUpload}
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                      />
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {editingCase.documentImages?.map((img: string, idx: number) => (
+                          <div key={idx} className="relative aspect-[1/1.4] bg-slate-800 rounded-lg overflow-hidden border border-white/5 group">
+                            <img src={img} alt={`결정문 ${idx + 1}`} className="w-full h-full object-cover" />
+                            <button 
+                              type="button"
+                              onClick={() => handleRemoveDocumentImage(idx)}
+                              className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">강조 텍스트</label>

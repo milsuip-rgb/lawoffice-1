@@ -1,7 +1,71 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, getDocs, getDocFromServer } from 'firebase/firestore';
+import { db, auth } from '../firebase';
 import { successCases as initialCases, lawyers as initialLawyers } from '../data';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if(error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Please check your Firebase configuration. ");
+    }
+    // Skip logging for other errors, as this is simply a connection test.
+  }
+}
+
+testConnection();
 
 const DEFAULT_POPUP = {
   id: 1,
@@ -87,22 +151,22 @@ export const useFirestore = (collectionName: string, initialData: any[] = []) =>
   }, [collectionName]);
 
   const addOrUpdate = async (item: any) => {
+    const id = item.id ? String(item.id) : String(Date.now());
+    const path = `${collectionName}/${id}`;
     try {
       // Ensure id exists
-      const id = item.id ? String(item.id) : String(Date.now());
       await setDoc(doc(db, collectionName, id), { ...item, id: isNaN(Number(id)) ? id : Number(id) });
     } catch (error) {
-      console.error("Error saving document:", error);
-      throw error;
+      handleFirestoreError(error, OperationType.WRITE, path);
     }
   };
 
   const remove = async (id: string | number) => {
+    const path = `${collectionName}/${id}`;
     try {
       await deleteDoc(doc(db, collectionName, String(id)));
     } catch (error) {
-      console.error("Error deleting document:", error);
-      throw error;
+      handleFirestoreError(error, OperationType.DELETE, path);
     }
   };
 
