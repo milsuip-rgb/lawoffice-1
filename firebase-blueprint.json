@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "Lawyer": {
+      "title": "Lawyer",
+      "description": "Information about a lawyer.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "field": { "type": "string" },
+        "image": { "type": "string" },
+        "cert": { "type": "string" },
+        "careers": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "name", "role", "field"]
+    },
+    "SuccessCase": {
+      "title": "Success Case",
+      "description": "A successful legal case.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "badge": { "type": "string" },
+        "title": { "type": "string" },
+        "situation": { "type": "string" },
+        "dangerSituation": { "type": "string" },
+        "issue": { "type": "string" },
+        "result": { "type": "string" },
+        "image": { "type": "string" },
+        "summary": { "type": "string" },
+        "issues": { "type": "array", "items": { "type": "string" } },
+        "strategy": { "type": "array", "items": { "type": "string" } },
+        "finalResult": { "type": "string" },
+        "documentImages": { "type": "array", "items": { "type": "string" } },
+        "highlightText": { "type": "string" }
+      },
+      "required": ["id", "badge", "title", "situation", "dangerSituation", "finalResult"]
+    },
+    "Popup": {
+      "title": "Popup",
+      "description": "A popup notification.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "link": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" }
+      },
+      "required": ["id", "title", "content", "isActive"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A client review.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "result": { "type": "string" },
+        "text": { "type": "string" },
+        "bg": { "type": "string" }
+      },
+      "required": ["id", "result", "text"]
+    },
+    "Consultation": {
+      "title": "Consultation",
+      "description": "A consultation request.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "completed"] }
+      },
+      "required": ["id", "name", "phone", "content", "createdAt", "status"]
+    }
+  },
+  "firestore": {
+    "/lawyers/{lawyerId}": {
+      "schema": { "$ref": "#/entities/Lawyer" },
+      "description": "Collection of lawyers."
+    },
+    "/cases/{caseId}": {
+      "schema": { "$ref": "#/entities/SuccessCase" },
+      "description": "Collection of success cases."
+    },
+    "/popups/{popupId}": {
+      "schema": { "$ref": "#/entities/Popup" },
+      "description": "Collection of popups."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Collection of reviews."
+    },
+    "/consultations/{consultationId}": {
+      "schema": { "$ref": "#/entities/Consultation" },
+      "description": "Collection of consultation requests."
+    }
+  }
+}

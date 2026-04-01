@@ -1,0 +1,103 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.email == "milsuip@gmail.com" && request.auth.token.email_verified == true;
+    }
+    
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidLawyer() {
+      return hasRequiredFields(['id', 'name', 'role', 'field']) &&
+             request.resource.data.name is string && request.resource.data.name.size() < 100 &&
+             request.resource.data.role is string && request.resource.data.role.size() < 100 &&
+             request.resource.data.field is string && request.resource.data.field.size() < 100;
+    }
+    
+    function isValidCase() {
+      return hasRequiredFields(['id', 'badge', 'title', 'situation', 'dangerSituation', 'finalResult']) &&
+             request.resource.data.title is string && request.resource.data.title.size() < 200 &&
+             request.resource.data.situation is string && request.resource.data.situation.size() < 5000;
+    }
+    
+    function isValidPopup() {
+      return hasRequiredFields(['id', 'title', 'content', 'isActive']) &&
+             request.resource.data.title is string && request.resource.data.title.size() < 200 &&
+             request.resource.data.content is string && request.resource.data.content.size() < 5000 &&
+             request.resource.data.isActive is bool;
+    }
+    
+    function isValidReview() {
+      return hasRequiredFields(['id', 'result', 'text']) &&
+             request.resource.data.result is string && request.resource.data.result.size() < 100 &&
+             request.resource.data.text is string && request.resource.data.text.size() < 5000;
+    }
+    
+    function isValidConsultation() {
+      return hasRequiredFields(['id', 'name', 'phone', 'content', 'createdAt', 'status']) &&
+             request.resource.data.name is string && request.resource.data.name.size() < 100 &&
+             request.resource.data.phone is string && request.resource.data.phone.size() < 50 &&
+             request.resource.data.content is string && request.resource.data.content.size() < 5000 &&
+             request.resource.data.status in ['new', 'completed'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    
+    match /lawyers/{lawyerId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidLawyer();
+      allow update: if isAdmin() && isValidLawyer();
+      allow delete: if isAdmin();
+    }
+    
+    match /cases/{caseId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidCase();
+      allow update: if isAdmin() && isValidCase();
+      allow delete: if isAdmin();
+    }
+    
+    match /popups/{popupId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidPopup();
+      allow update: if isAdmin() && isValidPopup();
+      allow delete: if isAdmin();
+    }
+    
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidReview();
+      allow update: if isAdmin() && isValidReview();
+      allow delete: if isAdmin();
+    }
+    
+    match /consultations/{consultationId} {
+      allow read: if isAdmin();
+      allow create: if isValidConsultation(); // Anyone can create a consultation
+      allow update: if isAdmin() && isValidConsultation();
+      allow delete: if isAdmin();
+    }
+  }
+}
