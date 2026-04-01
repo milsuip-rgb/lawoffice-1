@@ -40,16 +40,12 @@ export default function Consultation() {
       `;
       
       try {
-        const telegramSuccess = await sendTelegramMessage(message);
-        if (telegramSuccess === false) {
-          // Token is missing, just show success for the form
-          toast.success('상담 신청이 접수되었습니다. 곧 연락드리겠습니다.');
-        } else {
-          toast.success('상담 신청이 접수되었습니다. 곧 연락드리겠습니다.');
-        }
-      } catch (telegramError) {
+        await sendTelegramMessage(message);
+        toast.success('상담 신청이 접수되었습니다. 곧 연락드리겠습니다.');
+      } catch (telegramError: any) {
         console.error('Telegram notification failed:', telegramError);
-        toast.success('상담 신청이 접수되었습니다. (알림 전송 지연)');
+        toast.error(`알림 전송 실패: ${telegramError.message}`);
+        toast.success('상담 신청은 정상적으로 접수되었습니다.');
       }
 
       setFormData({ name: '', phone: '', content: '' });
