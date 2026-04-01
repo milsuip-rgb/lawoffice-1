@@ -58,7 +58,7 @@ service cloud.firestore {
              request.resource.data.name is string && request.resource.data.name.size() < 100 &&
              request.resource.data.phone is string && request.resource.data.phone.size() < 50 &&
              request.resource.data.content is string && request.resource.data.content.size() < 5000 &&
-             request.resource.data.status in ['new', 'completed'];
+             request.resource.data.status in ['new', 'read', 'completed'];
     }
 
     // ===============================================================

@@ -5,61 +5,49 @@ import { useFirestore, initialCases, initialLawyers, DEFAULT_POPUP, DEFAULT_REVI
 import { compressImage } from '../utils/imageCompressor';
 import { toast } from 'sonner';
 
-const mockConsultations = [
-  {
-    id: 1,
-    name: '김철수',
-    phone: '010-1234-5678',
-    date: '2026-04-01',
-    time: '10:30',
-    content: '보이스피싱 수거책으로 연루되어 경찰 조사를 앞두고 있습니다. 어떻게 대응해야 할까요?',
-    status: 'new'
-  },
-  {
-    id: 2,
-    name: '이영희',
-    phone: '010-9876-5432',
-    date: '2026-04-01',
-    time: '09:15',
-    content: '통장 대여 건으로 전자금융거래법 위반 혐의를 받고 있습니다. 상담 부탁드립니다.',
-    status: 'read'
-  },
-  {
-    id: 3,
-    name: '박지민',
-    phone: '010-5555-4444',
-    date: '2026-03-31',
-    time: '17:45',
-    content: '대출 사기 피해를 입었는데 가해자 처벌이 가능한지 궁금합니다.',
-    status: 'read'
-  },
-  {
-    id: 4,
-    name: '최동현',
-    phone: '010-2222-3333',
-    date: '2026-03-31',
-    time: '14:20',
-    content: '해외 송금 아르바이트인 줄 알고 가담했는데 보이스피싱이라고 합니다. 무죄 주장이 가능할까요?',
-    status: 'new'
-  }
-];
-
-const mockPopups = [
-  {
-    id: 1,
-    title: '긴급 상담 안내',
-    content: '24시간 긴급 상담 전화를 운영하고 있습니다. 야간 및 주말에도 연락 가능합니다.',
-    imageUrl: 'https://picsum.photos/seed/popup1/600/400',
-    isActive: true,
-    link: '/consultation'
-  }
-];
-
+import { auth } from '../firebase';
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 
 export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [password, setPassword] = useState('');
+  const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'cases' | 'lawyers' | 'consultations' | 'popups' | 'reviews'>('dashboard');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.email === 'milsuip@gmail.com') {
+        setIsLoggedIn(true);
+        setUser(user);
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      if (result.user.email !== 'milsuip@gmail.com') {
+        await signOut(auth);
+        toast.error('관리자 권한이 없는 계정입니다.');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('로그인 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast.success('로그아웃 되었습니다.');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   // Firestore Hooks
   const { data: popups, addOrUpdate: savePopup, remove: removePopup } = useFirestore('popups', [DEFAULT_POPUP]);
@@ -356,15 +344,6 @@ export default function Admin() {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === 'qjqwls0414') {
-      setIsLoggedIn(true);
-    } else {
-      alert('비밀번호가 틀렸습니다.');
-    }
-  };
-
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#050a14] px-4">
@@ -380,25 +359,18 @@ export default function Admin() {
             <h1 className="text-2xl font-bold text-white">관리자 로그인</h1>
             <p className="text-slate-400 mt-2">시스템 관리를 위해 로그인하세요</p>
           </div>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">관리자 비밀번호</label>
-              <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            <button 
-              type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-red-600/20"
+          <div className="space-y-4">
+            <p className="text-slate-400 text-center mb-6">
+              관리자 권한이 있는 구글 계정으로 로그인해주세요.
+            </p>
+            <button
+              onClick={handleLogin}
+              className="w-full bg-white text-black py-4 rounded-xl font-bold text-lg hover:bg-slate-100 transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg"
             >
-              로그인
+              <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
+              구글 계정으로 로그인
             </button>
-          </form>
+          </div>
           <p className="text-center text-xs text-slate-600 mt-6">
             © 2026 법무법인 정해. All rights reserved.
           </p>
@@ -463,7 +435,7 @@ export default function Admin() {
         </nav>
         <div className="p-4 border-t border-white/5">
           <button 
-            onClick={() => setIsLoggedIn(false)}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-colors"
           >
             <LogOut className="w-5 h-5" />
@@ -533,9 +505,9 @@ export default function Admin() {
                 className="bg-[#0a0f18] border border-white/5 p-6 rounded-2xl cursor-pointer hover:border-red-500/30 transition-colors"
               >
                 <p className="text-slate-400 text-sm mb-1">오늘의 상담 신청</p>
-                <h3 className="text-3xl font-bold text-white">{mockConsultations.filter(c => c.date === '2026-04-01').length}건</h3>
+                <h3 className="text-3xl font-bold text-white">{consultations.filter(c => c.date === new Date().toISOString().split('T')[0]).length}건</h3>
                 <div className="mt-4 text-red-500 text-sm flex items-center gap-1">
-                  <span>미확인 {mockConsultations.filter(c => c.status === 'new').length}건</span>
+                  <span>미확인 {consultations.filter(c => c.status === 'new').length}건</span>
                 </div>
               </div>
             </div>
@@ -547,7 +519,7 @@ export default function Admin() {
                   <button onClick={() => setActiveTab('consultations')} className="text-red-500 text-sm hover:underline">전체보기</button>
                 </div>
                 <div className="space-y-4">
-                  {mockConsultations.slice(0, 3).map((consult) => (
+                  {consultations.slice(0, 3).map((consult) => (
                     <div key={consult.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
                       <div>
                         <p className="text-white font-bold text-sm">{consult.name}</p>
@@ -559,20 +531,35 @@ export default function Admin() {
                       </div>
                     </div>
                   ))}
+                  {consultations.length === 0 && (
+                    <p className="text-slate-500 text-center py-4">최근 상담 신청이 없습니다.</p>
+                  )}
                 </div>
               </div>
               <div className="bg-[#0a0f18] border border-white/5 rounded-2xl p-6">
                 <h4 className="text-lg font-bold text-white mb-6">시스템 알림</h4>
                 <div className="space-y-4">
-                  <div className="flex gap-4 p-4 bg-red-500/5 border border-red-500/10 rounded-xl">
-                    <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center shrink-0">
-                      <AlertTriangle className="w-5 h-5 text-red-500" />
+                  {consultations.filter(c => c.status === 'new').length > 0 ? (
+                    <div className="flex gap-4 p-4 bg-red-500/5 border border-red-500/10 rounded-xl">
+                      <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <AlertTriangle className="w-5 h-5 text-red-500" />
+                      </div>
+                      <div>
+                        <p className="text-white text-sm font-bold">미확인 상담 신청이 있습니다</p>
+                        <p className="text-slate-400 text-xs mt-1">현재 {consultations.filter(c => c.status === 'new').length}건의 미확인 상담 신청이 있습니다.</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-white text-sm font-bold">미확인 상담 신청이 있습니다</p>
-                      <p className="text-slate-400 text-xs mt-1">오늘 접수된 {mockConsultations.filter(c => c.status === 'new').length}건의 상담 신청을 확인해주세요.</p>
+                  ) : (
+                    <div className="flex gap-4 p-4 bg-green-500/5 border border-green-500/10 rounded-xl">
+                      <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <Monitor className="w-5 h-5 text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-white text-sm font-bold">모든 상담을 확인했습니다</p>
+                        <p className="text-slate-400 text-xs mt-1">새로운 알림이 없습니다.</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

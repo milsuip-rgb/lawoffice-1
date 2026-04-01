@@ -75,7 +75,7 @@
         "phone": { "type": "string" },
         "content": { "type": "string" },
         "createdAt": { "type": "string" },
-        "status": { "type": "string", "enum": ["new", "completed"] }
+        "status": { "type": "string", "enum": ["new", "completed", "read"] }
       },
       "required": ["id", "name", "phone", "content", "createdAt", "status"]
     }

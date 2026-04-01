@@ -1,7 +1,41 @@
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Phone, Clock, ArrowRight, AlertTriangle, Calendar, MessageSquare } from 'lucide-react';
+import { useFirestore } from '../hooks/useFirestore';
+import { toast } from 'sonner';
 
 export default function Consultation() {
+  const { addOrUpdate: saveConsultation } = useFirestore('consultations');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    content: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const now = new Date();
+      await saveConsultation({
+        ...formData,
+        id: Date.now(),
+        status: 'new',
+        date: now.toISOString().split('T')[0],
+        time: now.toTimeString().split(' ')[0].substring(0, 5),
+        createdAt: now.toISOString()
+      });
+      toast.success('상담 신청이 접수되었습니다. 곧 연락드리겠습니다.');
+      setFormData({ name: '', phone: '', content: '' });
+    } catch (error) {
+      console.error('Consultation save error:', error);
+      toast.error('접수 중 오류가 발생했습니다. 전화로 문의 부탁드립니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="pt-10 pb-20 px-5 max-w-4xl mx-auto relative z-10">
       {/* 5. 상담 안내 페이지 */}
@@ -92,13 +126,15 @@ export default function Consultation() {
           <p className="text-slate-400">내용을 남겨주시면 전담팀이 신속하게 연락드립니다.</p>
         </div>
 
-        <form className="space-y-6 max-w-2xl mx-auto" onSubmit={(e) => { e.preventDefault(); alert('상담 신청이 접수되었습니다.'); }}>
+        <form className="space-y-6 max-w-2xl mx-auto" onSubmit={handleSubmit}>
           <div className="grid sm:grid-cols-2 gap-6">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">이름</label>
               <input 
                 type="text" 
                 id="name" 
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors"
                 placeholder="홍길동"
                 required
@@ -109,6 +145,8 @@ export default function Consultation() {
               <input 
                 type="tel" 
                 id="phone" 
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors"
                 placeholder="010-0000-0000"
                 required
@@ -120,6 +158,8 @@ export default function Consultation() {
             <textarea 
               id="details" 
               rows={5}
+              value={formData.content}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors resize-none"
               placeholder="현재 상황을 간략히 적어주세요. (예: 경찰 조사 출석 요구를 받았습니다.)"
               required
@@ -127,9 +167,10 @@ export default function Consultation() {
           </div>
           <button 
             type="submit"
-            className="w-full group relative inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all active:scale-95 shadow-lg"
+            disabled={isSubmitting}
+            className="w-full group relative inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>상담 접수하기</span>
+            <span>{isSubmitting ? '접수 중...' : '상담 접수하기'}</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
           <div className="flex items-center justify-center gap-2 text-xs text-slate-500 mt-4">
