@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, ArrowRight, Phone, MessageSquare, Calendar } from 'lucide-react';
-import { successCases } from '../data';
+import { useFirestore, initialCases } from '../hooks/useFirestore';
 import { useEffect } from 'react';
 
 const getBadgeColor = (badge: string) => {
@@ -19,17 +19,26 @@ const getBadgeColor = (badge: string) => {
 export default function SuccessCaseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const caseId = parseInt(id || '1', 10);
+  const { data: cases, loading } = useFirestore('cases', initialCases);
   
-  const currentCase = successCases.find(c => c.id === caseId);
-  const currentIndex = successCases.findIndex(c => c.id === caseId);
+  const currentCase = cases.find(c => String(c.id) === String(id));
+  const currentIndex = cases.findIndex(c => String(c.id) === String(id));
   
-  const prevCase = currentIndex > 0 ? successCases[currentIndex - 1] : null;
-  const nextCase = currentIndex < successCases.length - 1 ? successCases[currentIndex + 1] : null;
+  const prevCase = currentIndex > 0 ? cases[currentIndex - 1] : null;
+  const nextCase = currentIndex < cases.length - 1 ? cases[currentIndex + 1] : null;
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
+
+  if (loading) {
+    return (
+      <div className="pt-32 pb-20 px-5 text-center min-h-screen flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-slate-400">데이터를 불러오는 중입니다...</p>
+      </div>
+    );
+  }
 
   if (!currentCase) {
     return (
@@ -69,8 +78,8 @@ export default function SuccessCaseDetail() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-12 text-center sm:text-left"
         >
-          <span className={`inline-block border text-sm font-bold px-3 py-1 rounded-full mb-4 ${getBadgeColor(currentCase.badge)}`}>
-            [{currentCase.badge}]
+          <span className={`inline-block border text-sm font-bold px-3 py-1 rounded-full mb-4 ${getBadgeColor(currentCase.badge || '')}`}>
+            [{currentCase.badge || '성공사례'}]
           </span>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight break-keep mb-4">
             {currentCase.title}
@@ -116,12 +125,17 @@ export default function SuccessCaseDetail() {
           >
             <h2 className="text-lg font-bold text-slate-400 mb-3">핵심 쟁점</h2>
             <ul className="space-y-2">
-              {currentCase.issues.map((issue, idx) => (
+              {Array.isArray(currentCase.issues) ? currentCase.issues.map((issue: string, idx: number) => (
                 <li key={idx} className="flex items-start gap-2 text-white text-lg">
                   <span className="text-slate-500">-</span>
                   <span className="break-keep">{issue}</span>
                 </li>
-              ))}
+              )) : (
+                <li className="flex items-start gap-2 text-white text-lg">
+                  <span className="text-slate-500">-</span>
+                  <span className="break-keep">{currentCase.issue || currentCase.issues}</span>
+                </li>
+              )}
             </ul>
           </motion.section>
 
@@ -135,12 +149,17 @@ export default function SuccessCaseDetail() {
             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
             <h2 className="text-lg font-bold text-blue-400 mb-3">대응 전략</h2>
             <ul className="space-y-2">
-              {currentCase.strategy.map((strat, idx) => (
+              {Array.isArray(currentCase.strategy) ? currentCase.strategy.map((strat: string, idx: number) => (
                 <li key={idx} className="flex items-start gap-2 text-white text-lg">
                   <span className="text-blue-500">-</span>
                   <span className="break-keep">{strat}</span>
                 </li>
-              ))}
+              )) : (
+                <li className="flex items-start gap-2 text-white text-lg">
+                  <span className="text-blue-500">-</span>
+                  <span className="break-keep">{currentCase.strategy}</span>
+                </li>
+              )}
             </ul>
           </motion.section>
 
@@ -168,7 +187,7 @@ export default function SuccessCaseDetail() {
             <p className="text-slate-400 text-sm mb-6">※ 개인정보는 비식별 처리되었습니다</p>
             
             <div className="grid gap-4 max-w-md mx-auto mb-6">
-              {currentCase.documentImages.map((img, idx) => (
+              {Array.isArray(currentCase.documentImages) && currentCase.documentImages.map((img: string, idx: number) => (
                 <div key={idx} className="relative w-full aspect-[1/1.4] bg-[#0a0f18] rounded-xl border border-white/10 overflow-hidden flex flex-col items-center justify-center p-4">
                   <img 
                     src={img} 

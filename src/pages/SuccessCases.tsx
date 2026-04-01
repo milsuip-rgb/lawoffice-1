@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Phone, Calendar, MessageSquare } from 'lucide-react';
 import { useFirestore } from '../hooks/useFirestore';
+import { successCases as initialCases } from '../data';
 
 const getBadgeColor = (badge: string) => {
   switch(badge) {
@@ -17,7 +18,16 @@ const getBadgeColor = (badge: string) => {
 };
 
 export default function SuccessCases() {
-  const { data: cases } = useFirestore('cases');
+  const { data: cases, loading } = useFirestore('cases', initialCases);
+
+  if (loading && cases.length === 0) {
+    return (
+      <div className="pt-32 pb-20 px-5 text-center min-h-screen flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-slate-400">데이터를 불러오는 중입니다...</p>
+      </div>
+    );
+  }
 
   const fullCases = cases.slice(4);
   const halfLength = Math.ceil(fullCases.length / 2);

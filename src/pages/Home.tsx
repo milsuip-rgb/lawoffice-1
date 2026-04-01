@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Phone, CheckCircle2, AlertTriangle, Clock, ArrowRight, AlertOctagon, CheckCircle, Quote, User, MessageSquare, Shield, Target, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useFirestore } from '../hooks/useFirestore';
+import { lawyers as initialLawyers, successCases as initialCases } from '../data';
 
 export default function Home() {
-  const { data: lawyersList } = useFirestore('lawyers');
-  const { data: casesList } = useFirestore('cases');
+  const { data: lawyersList } = useFirestore('lawyers', initialLawyers);
+  const { data: casesList } = useFirestore('cases', initialCases);
   const { data: reviewsList } = useFirestore('reviews');
   const [currentLawyerIdx, setCurrentLawyerIdx] = useState(0);
   const [currentReviewIdx, setCurrentReviewIdx] = useState(0);

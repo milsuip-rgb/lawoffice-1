@@ -4,6 +4,7 @@
  */
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import SuccessCases from './pages/SuccessCases';
@@ -19,6 +20,7 @@ import Admin from './pages/Admin';
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-center" richColors />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />

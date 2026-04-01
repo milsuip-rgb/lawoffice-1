@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LayoutDashboard, FileText, Users, Settings, LogOut, Plus, Edit2, Trash2, Search, MessageSquare, Clock, Calendar as CalendarIcon, AlertTriangle, Monitor, X, Link as LinkIcon, Image as ImageIcon, Upload } from 'lucide-react';
 import { useFirestore, initialCases, initialLawyers, DEFAULT_POPUP, DEFAULT_REVIEWS } from '../hooks/useFirestore';
 import { compressImage } from '../utils/imageCompressor';
+import { toast } from 'sonner';
 
 const mockConsultations = [
   {
@@ -103,16 +104,29 @@ export default function Admin() {
     setIsReviewModalOpen(true);
   };
 
-  const handleDeleteReview = async (id: number) => {
+  const handleDeleteReview = async (id: any) => {
     if (window.confirm('정말 삭제하시겠습니까?')) {
-      await removeReview(id);
+      try {
+        await removeReview(id);
+        toast.success('후기가 삭제되었습니다.');
+      } catch (error) {
+        console.error('Delete review error:', error);
+        toast.error('삭제 중 오류가 발생했습니다.');
+      }
     }
   };
 
   const handleSaveReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveReview(editingReview);
-    setIsReviewModalOpen(false);
+    try {
+      await saveReview(editingReview);
+      setIsReviewModalOpen(false);
+      setEditingReview(null);
+      toast.success('후기가 저장되었습니다.');
+    } catch (error) {
+      console.error('Save review error:', error);
+      toast.error('저장 중 오류가 발생했습니다.');
+    }
   };
 
   const handleReviewImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,9 +149,15 @@ export default function Admin() {
     }
   };
 
-  const handleDeletePopup = async (id: number) => {
+  const handleDeletePopup = async (id: any) => {
     if (window.confirm('정말 삭제하시겠습니까?')) {
-      await removePopup(id);
+      try {
+        await removePopup(id);
+        toast.success('팝업이 삭제되었습니다.');
+      } catch (error) {
+        console.error('Delete popup error:', error);
+        toast.error('삭제 중 오류가 발생했습니다.');
+      }
     }
   };
 
@@ -174,9 +194,15 @@ export default function Admin() {
 
   const handleSavePopup = async (e: React.FormEvent) => {
     e.preventDefault();
-    await savePopup(editingPopup);
-    setIsPopupModalOpen(false);
-    setEditingPopup(null);
+    try {
+      await savePopup(editingPopup);
+      setIsPopupModalOpen(false);
+      setEditingPopup(null);
+      toast.success('팝업이 저장되었습니다.');
+    } catch (error) {
+      console.error('Save popup error:', error);
+      toast.error('저장 중 오류가 발생했습니다.');
+    }
   };
 
   // Case Handlers
@@ -217,17 +243,29 @@ export default function Admin() {
     }
   };
 
-  const handleDeleteCase = async (id: number) => {
+  const handleDeleteCase = async (id: any) => {
     if (window.confirm('정말 삭제하시겠습니까?')) {
-      await removeCase(id);
+      try {
+        await removeCase(id);
+        toast.success('성공사례가 삭제되었습니다.');
+      } catch (error) {
+        console.error('Delete case error:', error);
+        toast.error('삭제 중 오류가 발생했습니다.');
+      }
     }
   };
 
   const handleSaveCase = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveCase(editingCase);
-    setIsCaseModalOpen(false);
-    setEditingCase(null);
+    try {
+      await saveCase(editingCase);
+      setIsCaseModalOpen(false);
+      setEditingCase(null);
+      toast.success('성공사례가 저장되었습니다.');
+    } catch (error) {
+      console.error('Save case error:', error);
+      toast.error('저장 중 오류가 발생했습니다.');
+    }
   };
 
   // Lawyer Handlers
@@ -279,17 +317,29 @@ export default function Admin() {
     setEditingLawyer({ ...editingLawyer, careers: newCareers });
   };
 
-  const handleDeleteLawyer = async (id: number) => {
+  const handleDeleteLawyer = async (id: any) => {
     if (window.confirm('정말 삭제하시겠습니까?')) {
-      await removeLawyer(id);
+      try {
+        await removeLawyer(id);
+        toast.success('변호사 정보가 삭제되었습니다.');
+      } catch (error) {
+        console.error('Delete lawyer error:', error);
+        toast.error('삭제 중 오류가 발생했습니다.');
+      }
     }
   };
 
   const handleSaveLawyer = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveLawyer(editingLawyer);
-    setIsLawyerModalOpen(false);
-    setEditingLawyer(null);
+    try {
+      await saveLawyer(editingLawyer);
+      setIsLawyerModalOpen(false);
+      setEditingLawyer(null);
+      toast.success('변호사 정보가 저장되었습니다.');
+    } catch (error) {
+      console.error('Save lawyer error:', error);
+      toast.error('저장 중 오류가 발생했습니다.');
+    }
   };
 
   // Consultation Handlers
@@ -300,7 +350,7 @@ export default function Admin() {
     }
   };
 
-  const handleDeleteConsultation = async (id: number) => {
+  const handleDeleteConsultation = async (id: any) => {
     if (window.confirm('정말 삭제하시겠습니까?')) {
       await removeConsultation(id);
     }
