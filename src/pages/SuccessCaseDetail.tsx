@@ -187,12 +187,28 @@ export default function SuccessCaseDetail() {
             <p className="text-slate-400 text-sm mb-6">※ 개인정보는 비식별 처리되었습니다</p>
             
             <div className="grid gap-4 max-w-md mx-auto mb-6">
-              {Array.isArray(currentCase.documentImages) && currentCase.documentImages.map((img: string, idx: number) => (
-                <div key={idx} className="relative w-full aspect-[1/1.4] bg-[#0a0f18] rounded-xl border border-white/10 overflow-hidden flex flex-col items-center justify-center p-4">
+              {Array.isArray(currentCase.documentImages) && currentCase.documentImages.length > 0 ? (
+                currentCase.documentImages.map((img: string, idx: number) => (
+                  <div key={idx} className="relative w-full aspect-[1/1.4] bg-[#0a0f18] rounded-xl border border-white/10 overflow-hidden flex flex-col items-center justify-center p-4">
+                    <img 
+                      src={img} 
+                      alt={`판결문 이미지 ${idx + 1}`} 
+                      className="absolute inset-0 w-full h-full object-cover opacity-50"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="relative z-10 bg-black/60 backdrop-blur-sm border border-red-500/30 p-4 rounded-lg w-full">
+                      <p className="text-red-400 font-bold text-lg break-keep">
+                        "{currentCase.highlightText || '혐의를 인정하기 부족하다'}"
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : currentCase.image ? (
+                <div className="relative w-full aspect-[1/1.4] bg-[#0a0f18] rounded-xl border border-white/10 overflow-hidden flex flex-col items-center justify-center p-4">
                   <img 
-                    src={img} 
-                    alt={`판결문 이미지 ${idx + 1}`} 
-                    className="absolute inset-0 w-full h-full object-cover opacity-30"
+                    src={currentCase.image} 
+                    alt="판결문 이미지" 
+                    className="absolute inset-0 w-full h-full object-cover opacity-50"
                     referrerPolicy="no-referrer"
                   />
                   <div className="relative z-10 bg-black/60 backdrop-blur-sm border border-red-500/30 p-4 rounded-lg w-full">
@@ -201,7 +217,11 @@ export default function SuccessCaseDetail() {
                     </p>
                   </div>
                 </div>
-              ))}
+              ) : (
+                <div className="p-10 border border-dashed border-white/10 rounded-xl text-slate-500">
+                  등록된 이미지가 없습니다.
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row justify-center gap-3">

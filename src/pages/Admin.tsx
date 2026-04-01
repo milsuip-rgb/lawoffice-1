@@ -34,9 +34,13 @@ export default function Admin() {
         await signOut(auth);
         toast.error('관리자 권한이 없는 계정입니다.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      toast.error('로그인 중 오류가 발생했습니다.');
+      if (error.code === 'auth/unauthorized-domain') {
+        toast.error('현재 도메인이 Firebase 승인 도메인에 등록되지 않았습니다. 관리자에게 문의하세요.');
+      } else {
+        toast.error('로그인 중 오류가 발생했습니다.');
+      }
     }
   };
 
