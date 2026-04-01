@@ -1,16 +1,15 @@
 export const sendTelegramMessage = async (message: string) => {
-  // 1. Vercel 환경변수 시도
-  // 2. AI Studio 환경변수 시도
-  // 3. 최후의 수단: 하드코딩된 토큰 (디버깅용)
-  const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || 
-                import.meta.env.VITE_TELEGRAM_BOT || 
-                '8656239511:AAHvdZ9zl2fGcSW-wrHNjdnSRBYtTEoWj_c';
-                
-  const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID || '8745161114';
+  const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || import.meta.env.VITE_TELEGRAM_BOT;
+  const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID;
 
   if (!token) {
     console.error('Telegram bot token is not set.');
     throw new Error('텔레그램 봇 토큰이 설정되지 않았습니다. (VITE_TELEGRAM_BOT_TOKEN)');
+  }
+  
+  if (!chatId) {
+    console.error('Telegram chat ID is not set.');
+    throw new Error('텔레그램 챗 아이디가 설정되지 않았습니다. (VITE_TELEGRAM_CHAT_ID)');
   }
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
@@ -33,7 +32,12 @@ export const sendTelegramMessage = async (message: string) => {
       console.error('Telegram API error:', errorData);
       throw new Error(`텔레그램 전송 실패: ${errorData.description || response.statusText}`);
     }
-    return true;
+    
+    // 성공 시 디버깅을 위해 토큰 끝자리와 챗아이디 반환
+    return {
+      tokenEnd: token.slice(-4),
+      chatId: chatId
+    };
   } catch (error) {
     console.error('Failed to send Telegram message:', error);
     throw error;
