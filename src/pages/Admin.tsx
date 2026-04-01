@@ -213,7 +213,8 @@ export default function Admin() {
       strategy: [],
       finalResult: '',
       documentImages: [],
-      highlightText: ''
+      highlightText: '',
+      order: 0
     });
     setIsCaseModalOpen(true);
   };
@@ -576,6 +577,7 @@ export default function Admin() {
               <thead>
                 <tr className="bg-white/5 text-slate-400 text-sm uppercase tracking-wider">
                   <th className="px-6 py-4 font-semibold">ID</th>
+                  <th className="px-6 py-4 font-semibold">순번</th>
                   <th className="px-6 py-4 font-semibold">구분</th>
                   <th className="px-6 py-4 font-semibold">제목</th>
                   <th className="px-6 py-4 font-semibold">결과</th>
@@ -586,6 +588,7 @@ export default function Admin() {
                 {cases.map((item) => (
                   <tr key={item.id} className="hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-4 text-slate-400 font-mono text-sm">{item.id}</td>
+                    <td className="px-6 py-4 font-bold text-red-500">{item.order || 0}</td>
                     <td className="px-6 py-4">
                       <span className="px-2 py-1 bg-red-500/10 text-red-500 text-xs font-bold rounded uppercase tracking-tighter">
                         {item.badge}
@@ -983,6 +986,16 @@ export default function Admin() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-400 mb-2">순번 (작을수록 앞)</label>
+                        <input 
+                          type="number" 
+                          value={editingCase.order || 0}
+                          onChange={(e) => setEditingCase({ ...editingCase, order: parseInt(e.target.value) || 0 })}
+                          className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors"
+                          placeholder="0"
+                        />
+                      </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-400 mb-2">구분 (배지)</label>
                         <input 

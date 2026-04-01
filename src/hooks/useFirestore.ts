@@ -64,8 +64,11 @@ export const useFirestore = (collectionName: string, initialData: any[] = []) =>
         items.push({ ...doc.data(), id: doc.id }); // Ensure id is string or number based on original
       });
       
-      // Sort by id or createdAt if needed
+      // Sort by order, then by createdAt, then by id
       items.sort((a, b) => {
+        if (a.order !== undefined && b.order !== undefined) {
+          return Number(a.order) - Number(b.order);
+        }
         if (a.createdAt && b.createdAt) {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         }
