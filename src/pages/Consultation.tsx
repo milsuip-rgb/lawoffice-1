@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Phone, Clock, ArrowRight, AlertTriangle, Calendar, MessageSquare } from 'lucide-react';
 import { useFirestore } from '../hooks/useFirestore';
 import { toast } from 'sonner';
+import { sendTelegramMessage } from '../utils/telegram';
 
 export default function Consultation() {
   const { addOrUpdate: saveConsultation } = useFirestore('consultations');
@@ -18,14 +19,27 @@ export default function Consultation() {
     setIsSubmitting(true);
     try {
       const now = new Date();
-      await saveConsultation({
+      const consultationData = {
         ...formData,
         id: Date.now(),
         status: 'new',
         date: now.toISOString().split('T')[0],
         time: now.toTimeString().split(' ')[0].substring(0, 5),
         createdAt: now.toISOString()
-      });
+      };
+
+      await saveConsultation(consultationData);
+
+      // 텔레그램 알림 전송
+      const message = `
+<b>[새로운 상담 신청 알림]</b>
+<b>성함:</b> ${formData.name}
+<b>연락처:</b> ${formData.phone}
+<b>내용:</b> ${formData.content}
+<b>신청시간:</b> ${consultationData.date} ${consultationData.time}
+      `;
+      await sendTelegramMessage(message);
+
       toast.success('상담 신청이 접수되었습니다. 곧 연락드리겠습니다.');
       setFormData({ name: '', phone: '', content: '' });
     } catch (error) {
