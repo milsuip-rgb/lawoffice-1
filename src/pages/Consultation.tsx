@@ -38,9 +38,20 @@ export default function Consultation() {
 <b>내용:</b> ${formData.content}
 <b>신청시간:</b> ${consultationData.date} ${consultationData.time}
       `;
-      await sendTelegramMessage(message);
+      
+      try {
+        const telegramSuccess = await sendTelegramMessage(message);
+        if (telegramSuccess === false) {
+          // Token is missing, just show success for the form
+          toast.success('상담 신청이 접수되었습니다. 곧 연락드리겠습니다.');
+        } else {
+          toast.success('상담 신청이 접수되었습니다. 곧 연락드리겠습니다.');
+        }
+      } catch (telegramError) {
+        console.error('Telegram notification failed:', telegramError);
+        toast.success('상담 신청이 접수되었습니다. (알림 전송 지연)');
+      }
 
-      toast.success('상담 신청이 접수되었습니다. 곧 연락드리겠습니다.');
       setFormData({ name: '', phone: '', content: '' });
     } catch (error) {
       console.error('Consultation save error:', error);

@@ -4,7 +4,7 @@ export const sendTelegramMessage = async (message: string) => {
 
   if (!token) {
     console.warn('Telegram Bot Token is missing. Notification skipped.');
-    return;
+    return false;
   }
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
@@ -25,8 +25,11 @@ export const sendTelegramMessage = async (message: string) => {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Telegram API error:', errorData);
+      throw new Error(`Telegram API error: ${errorData.description || response.statusText}`);
     }
+    return true;
   } catch (error) {
     console.error('Failed to send Telegram message:', error);
+    throw error;
   }
 };

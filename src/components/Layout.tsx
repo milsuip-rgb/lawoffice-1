@@ -3,6 +3,7 @@ import { Phone, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Popup from './Popup';
+import FloatingConsultation from './FloatingConsultation';
 
 export default function Layout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -127,6 +128,9 @@ export default function Layout() {
       
       {/* Global Popup */}
       <Popup />
+      
+      {/* Floating Consultation Button */}
+      <FloatingConsultation />
     </div>
   );
 }
