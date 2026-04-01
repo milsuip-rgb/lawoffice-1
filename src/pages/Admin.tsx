@@ -1,19 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LayoutDashboard, FileText, Users, Settings, LogOut, Plus, Edit2, Trash2, Search, MessageSquare, Clock, Calendar as CalendarIcon, AlertTriangle, Monitor, X, Link as LinkIcon, Image as ImageIcon, Upload } from 'lucide-react';
-import { useFirestore } from '../hooks/useFirestore';
+import { useFirestore, initialCases, initialLawyers, DEFAULT_POPUP, DEFAULT_REVIEWS } from '../hooks/useFirestore';
 import { compressImage } from '../utils/imageCompressor';
-
-const DEFAULT_POPUP = {
-  id: 1,
-  title: '24시간 긴급 법률 상담',
-  content: '보이스피싱, 형사 사건은 초기 대응이 가장 중요합니다. 지금 바로 전문가의 도움을 받으세요. 야간 및 주말에도 상담이 가능합니다.',
-  imageUrl: 'https://picsum.photos/seed/popup_emergency/800/450',
-  isActive: true,
-  link: '/consultation',
-  startDate: '',
-  endDate: ''
-};
 
 const mockConsultations = [
   {
@@ -65,11 +54,6 @@ const mockPopups = [
   }
 ];
 
-const DEFAULT_REVIEWS = [
-  { id: 1, text: "복잡한 법률 용어도 쉽게 설명해주셔서 이해하기 쉬웠고, 방향성을 명확히 제시해 주셔서 안심하고 진행할 수 있었어요.", result: "혐의없음", bg: "/client_review_1.png" },
-  { id: 2, text: "장작 1년간의 싸움 끝에 승소를 받아주셔서 정말 감사했습니다. 정 변호사님 덕분에 소중한 일상을 되찾았습니다.", result: "무죄", bg: "/client_review_2.png" },
-  { id: 3, text: "혼자라고 생각했는데 들어주신 분이 계셔서 맘이 편해졌어요. 진심으로 감사드립니다.", result: "무죄", bg: "/client_review_3.png" }
-];
 
 export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -77,11 +61,11 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'cases' | 'lawyers' | 'consultations' | 'popups' | 'reviews'>('dashboard');
 
   // Firestore Hooks
-  const { data: popups, addOrUpdate: savePopup, remove: removePopup } = useFirestore('popups');
-  const { data: cases, addOrUpdate: saveCase, remove: removeCase } = useFirestore('cases');
-  const { data: lawyersList, addOrUpdate: saveLawyer, remove: removeLawyer } = useFirestore('lawyers');
+  const { data: popups, addOrUpdate: savePopup, remove: removePopup } = useFirestore('popups', [DEFAULT_POPUP]);
+  const { data: cases, addOrUpdate: saveCase, remove: removeCase } = useFirestore('cases', initialCases);
+  const { data: lawyersList, addOrUpdate: saveLawyer, remove: removeLawyer } = useFirestore('lawyers', initialLawyers);
   const { data: consultations, addOrUpdate: saveConsultation, remove: removeConsultation } = useFirestore('consultations');
-  const { data: reviews, addOrUpdate: saveReview, remove: removeReview } = useFirestore('reviews');
+  const { data: reviews, addOrUpdate: saveReview, remove: removeReview } = useFirestore('reviews', DEFAULT_REVIEWS);
 
   // Popup Management State
   const [isPopupModalOpen, setIsPopupModalOpen] = useState(false);
@@ -878,14 +862,6 @@ export default function Admin() {
                         className="hidden"
                         accept="image/*"
                       />
-                      <input 
-                        type="text" 
-                        value={editingPopup.imageUrl}
-                        onChange={(e) => setEditingPopup({ ...editingPopup, imageUrl: e.target.value })}
-                        className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors text-xs"
-                        placeholder="이미지 URL 또는 파일 업로드"
-                        required
-                      />
                       <div className="mt-2 aspect-video rounded-xl bg-slate-800 overflow-hidden border border-white/5 relative">
                         <img src={editingPopup.imageUrl} alt="미리보기" className="w-full h-full object-cover" onError={(e: any) => e.target.src = 'https://via.placeholder.com/800x450?text=Invalid+Image+URL'} />
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => fileInputRef.current?.click()}>
@@ -974,7 +950,6 @@ export default function Admin() {
                           onChange={(e) => setEditingCase({ ...editingCase, badge: e.target.value })}
                           className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors"
                           placeholder="예: 무죄, 집행유예"
-                          required
                         />
                       </div>
                       <div>
@@ -985,7 +960,6 @@ export default function Admin() {
                           onChange={(e) => setEditingCase({ ...editingCase, title: e.target.value })}
                           className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors"
                           placeholder="사례 제목"
-                          required
                         />
                       </div>
                     </div>
@@ -995,7 +969,6 @@ export default function Admin() {
                         value={editingCase.situation}
                         onChange={(e) => setEditingCase({ ...editingCase, situation: e.target.value })}
                         className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors h-24 resize-none"
-                        required
                       />
                     </div>
                     <div>
@@ -1004,7 +977,6 @@ export default function Admin() {
                         value={editingCase.dangerSituation}
                         onChange={(e) => setEditingCase({ ...editingCase, dangerSituation: e.target.value })}
                         className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors h-24 resize-none"
-                        required
                       />
                     </div>
                   </div>
@@ -1016,14 +988,13 @@ export default function Admin() {
                         value={editingCase.finalResult}
                         onChange={(e) => setEditingCase({ ...editingCase, finalResult: e.target.value })}
                         className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors h-24 resize-none"
-                        required
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2 flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <ImageIcon className="w-4 h-4" />
-                          이미지 설정
+                          대표 이미지 설정
                         </span>
                         <button 
                           type="button"
@@ -1040,13 +1011,6 @@ export default function Admin() {
                         onChange={handleCaseImageUpload}
                         className="hidden"
                         accept="image/*"
-                      />
-                      <input 
-                        type="text" 
-                        value={editingCase.image}
-                        onChange={(e) => setEditingCase({ ...editingCase, image: e.target.value })}
-                        className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors text-xs"
-                        placeholder="이미지 URL 또는 파일 업로드"
                       />
                       {editingCase.image && (
                         <div className="mt-2 w-full h-32 rounded-xl bg-slate-800 overflow-hidden border border-white/5 relative">
@@ -1154,14 +1118,6 @@ export default function Admin() {
                       onChange={handleReviewImageUpload}
                       className="hidden"
                       accept="image/*"
-                    />
-                    <input 
-                      type="text" 
-                      value={editingReview.bg}
-                      onChange={(e) => setEditingReview({ ...editingReview, bg: e.target.value })}
-                      className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors text-xs"
-                      placeholder="이미지 URL 또는 파일 업로드"
-                      required
                     />
                     {editingReview.bg && (
                       <div className="mt-4 w-full h-40 rounded-xl bg-slate-800 overflow-hidden border border-white/5 relative">
@@ -1278,14 +1234,6 @@ export default function Admin() {
                         onChange={handleLawyerImageUpload}
                         className="hidden"
                         accept="image/*"
-                      />
-                      <input 
-                        type="text" 
-                        value={editingLawyer.image}
-                        onChange={(e) => setEditingLawyer({ ...editingLawyer, image: e.target.value })}
-                        className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors text-xs"
-                        placeholder="이미지 URL 또는 파일 업로드"
-                        required
                       />
                       <div className="mt-2 w-24 h-32 rounded-xl bg-slate-800 overflow-hidden border border-white/5 relative mx-auto">
                         <img src={editingLawyer.image} alt="미리보기" className="w-full h-full object-cover" onError={(e: any) => e.target.src = 'https://via.placeholder.com/300x400?text=No+Image'} />
