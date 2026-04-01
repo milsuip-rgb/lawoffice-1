@@ -37,11 +37,7 @@ export const sendTelegramMessage = async (message: string) => {
       throw new Error(`텔레그램 전송 실패: ${errorData.description || response.statusText}`);
     }
     
-    // 성공 시 디버깅을 위해 토큰 끝자리와 챗아이디 반환
-    return {
-      tokenEnd: token.slice(-4),
-      chatId: chatId
-    };
+    return true;
   } catch (error) {
     console.error('Failed to send Telegram message:', error);
     throw error;
