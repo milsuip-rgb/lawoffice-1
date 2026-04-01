@@ -1,5 +1,5 @@
 export const sendTelegramMessage = async (message: string) => {
-  const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+  const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || import.meta.env.VITE_TELEGRAM_BOT;
   const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID || '8745161114';
 
   if (!token) {
