@@ -69,7 +69,7 @@ export default function FloatingConsultation() {
       >
         <MessageSquare className="w-7 h-7" />
         <span className="absolute right-full mr-4 bg-black/80 backdrop-blur-sm text-white text-sm font-bold px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-white/10">
-          빠른 상담 신청
+          빠른 상담 신청 🚀
         </span>
       </button>
 
@@ -140,7 +140,7 @@ export default function FloatingConsultation() {
                   disabled={isSubmitting}
                   className="w-full group relative inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3.5 rounded-xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span>{isSubmitting ? '접수 중...' : '상담 접수하기'}</span>
+                  <span>{isSubmitting ? '접수 중...' : '상담 접수하기 🚀'}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
                 <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500">
