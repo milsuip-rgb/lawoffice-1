@@ -40,8 +40,8 @@ export default function Consultation() {
       `;
       
       try {
-        await sendTelegramMessage(message);
-        toast.success('상담 신청이 접수되었습니다. 곧 연락드리겠습니다.');
+        const result = await sendTelegramMessage(message);
+        toast.success(`접수 완료! (디버그: ${result.tokenEnd} / ${result.chatId})`);
       } catch (telegramError: any) {
         console.error('Telegram notification failed:', telegramError);
         toast.error(`알림 전송 실패: ${telegramError.message}`);
