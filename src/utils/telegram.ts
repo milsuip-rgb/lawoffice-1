@@ -1,6 +1,10 @@
 export const sendTelegramMessage = async (message: string) => {
-  const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || import.meta.env.VITE_TELEGRAM_BOT;
-  const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+  // Vercel 환경변수 인식이 계속 실패하여 직접 값을 주입합니다 (하드코딩).
+  const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || 
+                import.meta.env.VITE_TELEGRAM_BOT || 
+                '8656239511:AAHvdZ9zl2fGcSW-wrHNjdnSRBYtTEoWj_c';
+                
+  const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID || '8745161114';
 
   if (!token) {
     console.error('Telegram bot token is not set.');

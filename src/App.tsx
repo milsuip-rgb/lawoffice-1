@@ -20,7 +20,7 @@ import Admin from './pages/Admin';
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster position="top-center" richColors />
+      <Toaster position="top-center" richColors duration={10000} />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
