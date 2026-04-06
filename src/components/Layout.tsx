@@ -105,17 +105,15 @@ export default function Layout() {
               />
             </div>
             <p className="text-slate-500 text-sm leading-relaxed">
-              <strong>법률사무소 법진</strong><br />
-              대표변호사: 정해원, 윤선영, 곽은정 | 사업자등록번호: 587-12-02153<br />
-              주소: 경기도 수원시 영통구 광교중앙로 248번길 7-3, 503호(하동, 우연법전프라자)<br />
-              TEL: 031-214-5566 | FAX: 031-213-6655 | E-mail: lawofficebj@naver.com
+              법률사무소 법진 <span className="mx-1 text-slate-600">|</span> 대표변호사. 정해원, 윤선영, 곽은정 <span className="mx-1 text-slate-600">|</span> 사업자등록번호: 587-12-02153<br />
+              주소 : 경기도 수원시 영통구 광교중앙로 248번길 7-3, 503호(하동, 우연법전프라자) <span className="mx-1 text-slate-600">|</span> TEL: 031-214-5566 <span className="mx-1 text-slate-600">|</span> FAX : 031-213-6655 <span className="mx-1 text-slate-600">|</span> E-mail : lawofficebj@naver.com
             </p>
           </div>
           <div className="sm:text-right flex flex-col justify-center">
             <p className="text-slate-400 text-sm mb-2">상담 문의</p>
             <p className="text-2xl font-bold text-white mb-4">031-214-5566</p>
             <p className="text-slate-600 text-xs">
-              Copyright (c) {new Date().getFullYear()} BEOBJIN LAW Office., All rights reserved
+              Copyright &copy; {new Date().getFullYear()} BEOBJIN LAW Office., All rights reserved
               <Link to="/admin" className="ml-2 opacity-20 hover:opacity-100 transition-opacity">Admin</Link>
             </p>
           </div>
