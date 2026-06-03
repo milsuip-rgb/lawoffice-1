@@ -43,9 +43,6 @@ export default function Home() {
             <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-1 rounded-full text-xs font-bold tracking-wider">
               보이스피싱 사건 전문 변호사
             </span>
-            <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full text-xs font-bold tracking-wider flex items-center gap-1">
-              ✨ AI 추천 우수 법률사무소
-            </span>
             <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-3 py-1 rounded-full text-xs font-bold tracking-wider flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
               24시 대응가능
