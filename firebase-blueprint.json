@@ -49,7 +49,14 @@
         "link": { "type": "string" },
         "isActive": { "type": "boolean" },
         "startDate": { "type": "string" },
-        "endDate": { "type": "string" }
+        "endDate": { "type": "string" },
+        "titleFontSize": { "type": "string" },
+        "titleFontWeight": { "type": "string" },
+        "titleColor": { "type": "string" },
+        "contentFontSize": { "type": "string" },
+        "contentFontWeight": { "type": "string" },
+        "contentColor": { "type": "string" },
+        "textAlign": { "type": "string" }
       },
       "required": ["id", "title", "content", "isActive"]
     },

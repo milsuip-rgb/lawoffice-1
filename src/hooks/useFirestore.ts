@@ -24,9 +24,7 @@ interface FirestoreErrorInfo {
     tenantId: string | null | undefined;
     providerInfo: {
       providerId: string;
-      displayName: string | null;
       email: string | null;
-      photoUrl: string | null;
     }[];
   }
 }
@@ -40,11 +38,9 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
       emailVerified: auth.currentUser?.emailVerified,
       isAnonymous: auth.currentUser?.isAnonymous,
       tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
         providerId: provider.providerId,
-        displayName: provider.displayName,
         email: provider.email,
-        photoUrl: provider.photoURL
       })) || []
     },
     operationType,
@@ -75,7 +71,14 @@ const DEFAULT_POPUP = {
   link: "/consultation",
   isActive: true,
   startDate: new Date().toISOString().split('T')[0],
-  endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  titleFontSize: "24px",
+  titleFontWeight: "700",
+  titleColor: "#ffffff",
+  contentFontSize: "16px",
+  contentFontWeight: "400",
+  contentColor: "#cbd5e1",
+  textAlign: "left"
 };
 
 const DEFAULT_REVIEWS = [
@@ -99,24 +102,50 @@ const DEFAULT_REVIEWS = [
   }
 ];
 
-export const useFirestore = (collectionName: string, initialData: any[] = []) => {
-  const [data, setData] = useState<any[]>([]);
+export interface UseFirestoreOptions {
+  enabled?: boolean;
+}
+
+export const useFirestore = (
+  collectionName: string, 
+  initialData: any[] = [],
+  options: UseFirestoreOptions = { enabled: true }
+) => {
+  const [data, setData] = useState<any[]>(initialData);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const isAdmin = auth.currentUser?.email === 'milsuip@gmail.com';
+    const canRead = collectionName === 'consultations' ? isAdmin : true;
+    const isEnabled = options.enabled !== false && canRead;
+
+    if (!isEnabled) {
+      setData(initialData);
+      setLoading(false);
+      return;
+    }
+
     const colRef = collection(db, collectionName);
+    const seededKey = `firestore_seeded_${collectionName}`;
     
-    // Check if empty and seed initial data
+    // Only authenticated admin seeds initial data if collection is empty
     const seedData = async () => {
+      if (!isAdmin || collectionName === 'consultations' || initialData.length === 0) {
+        return;
+      }
       try {
+        if (localStorage.getItem(seededKey)) {
+          return;
+        }
         const snapshot = await getDocs(colRef);
-        if (snapshot.empty && initialData.length > 0) {
+        if (snapshot.empty) {
           for (const item of initialData) {
             await setDoc(doc(colRef, String(item.id)), item);
           }
         }
+        localStorage.setItem(seededKey, 'true');
       } catch (error) {
-        console.error("Error seeding data:", error);
+        console.warn("Notice: Initial data seeding skipped:", error);
       }
     };
 
@@ -139,20 +168,26 @@ export const useFirestore = (collectionName: string, initialData: any[] = []) =>
         return Number(a.id) - Number(b.id);
       });
       
-      setData(items.length > 0 ? items : initialData);
+      if (snapshot.empty && !localStorage.getItem(seededKey) && initialData.length > 0) {
+        setData(initialData);
+      } else {
+        setData(items);
+      }
       setLoading(false);
     }, (error) => {
-      console.error("Firestore error:", error);
       setData(initialData);
       setLoading(false);
+      handleFirestoreError(error, OperationType.GET, collectionName);
     });
 
     return () => unsubscribe();
-  }, [collectionName]);
+  }, [collectionName, options.enabled]);
 
   const addOrUpdate = async (item: any) => {
     const id = item.id ? String(item.id) : String(Date.now());
     const path = `${collectionName}/${id}`;
+    const seededKey = `firestore_seeded_${collectionName}`;
+    localStorage.setItem(seededKey, 'true');
     try {
       // Ensure id exists
       await setDoc(doc(db, collectionName, id), { ...item, id: isNaN(Number(id)) ? id : Number(id) });
@@ -163,6 +198,10 @@ export const useFirestore = (collectionName: string, initialData: any[] = []) =>
 
   const remove = async (id: string | number) => {
     const path = `${collectionName}/${id}`;
+    const seededKey = `firestore_seeded_${collectionName}`;
+    localStorage.setItem(seededKey, 'true');
+    // Optimistically update local data immediately
+    setData((prev) => prev.filter((item) => String(item.id) !== String(id)));
     try {
       await deleteDoc(doc(db, collectionName, String(id)));
     } catch (error) {
@@ -171,6 +210,19 @@ export const useFirestore = (collectionName: string, initialData: any[] = []) =>
   };
 
   return { data, loading, addOrUpdate, remove };
+};
+
+export const submitConsultation = async (consultationData: any) => {
+  const id = consultationData.id ? String(consultationData.id) : String(Date.now());
+  const path = `consultations/${id}`;
+  try {
+    await setDoc(doc(db, 'consultations', id), {
+      ...consultationData,
+      id: isNaN(Number(id)) ? id : Number(id)
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
 };
 
 export { initialCases, initialLawyers, DEFAULT_POPUP, DEFAULT_REVIEWS };

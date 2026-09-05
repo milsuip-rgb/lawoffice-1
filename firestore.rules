@@ -3,6 +3,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Global Safety Net (Pillar 1)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
     // ===============================================================
     // Helper Functions
     // ===============================================================
@@ -11,7 +16,9 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.email == "milsuip@gmail.com";
+      return isAuthenticated() && 
+             request.auth.token.email == "milsuip@gmail.com" &&
+             request.auth.token.email_verified == true;
     }
     
     function hasRequiredFields(fields) {
@@ -65,6 +72,11 @@ service cloud.firestore {
     // Rules
     // ===============================================================
     
+    // Connection test rule
+    match /test/{docId} {
+      allow read: if true;
+    }
+
     match /lawyers/{lawyerId} {
       allow read: if true;
       allow create: if isAdmin() && isValidLawyer();

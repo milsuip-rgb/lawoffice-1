@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Phone, Clock, ArrowRight, AlertTriangle, Calendar, MessageSquare } from 'lucide-react';
-import { useFirestore } from '../hooks/useFirestore';
+import { submitConsultation } from '../hooks/useFirestore';
 import { toast } from 'sonner';
 import { sendTelegramMessage } from '../utils/telegram';
 
 export default function Consultation() {
-  const { addOrUpdate: saveConsultation } = useFirestore('consultations');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -28,7 +27,7 @@ export default function Consultation() {
         createdAt: now.toISOString()
       };
 
-      await saveConsultation(consultationData);
+      await submitConsultation(consultationData);
 
       // 텔레그램 알림 전송
       const message = `

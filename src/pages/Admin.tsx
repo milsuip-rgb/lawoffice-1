@@ -7,6 +7,23 @@ import { toast } from 'sonner';
 
 import { auth } from '../firebase';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
+import PopupEditModal from '../components/PopupEditModal';
+
+function renderMultilineText(rawText: string | undefined | null) {
+  if (!rawText) return null;
+  const normalized = String(rawText)
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n');
+
+  const lines = normalized.split('\n');
+  return lines.map((line, idx) => (
+    <span key={idx} className="block min-h-[1.4em]">
+      {line === '' ? '\u00A0' : line}
+    </span>
+  ));
+}
 
 export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -54,15 +71,17 @@ export default function Admin() {
   };
 
   // Firestore Hooks
-  const { data: popups, addOrUpdate: savePopup, remove: removePopup } = useFirestore('popups', [DEFAULT_POPUP]);
-  const { data: cases, addOrUpdate: saveCase, remove: removeCase } = useFirestore('cases', initialCases);
-  const { data: lawyersList, addOrUpdate: saveLawyer, remove: removeLawyer } = useFirestore('lawyers', initialLawyers);
-  const { data: consultations, addOrUpdate: saveConsultation, remove: removeConsultation } = useFirestore('consultations');
-  const { data: reviews, addOrUpdate: saveReview, remove: removeReview } = useFirestore('reviews', DEFAULT_REVIEWS);
+  const { data: popups, addOrUpdate: savePopup, remove: removePopup } = useFirestore('popups', [DEFAULT_POPUP], { enabled: isLoggedIn });
+  const { data: cases, addOrUpdate: saveCase, remove: removeCase } = useFirestore('cases', initialCases, { enabled: isLoggedIn });
+  const { data: lawyersList, addOrUpdate: saveLawyer, remove: removeLawyer } = useFirestore('lawyers', initialLawyers, { enabled: isLoggedIn });
+  const { data: consultations, addOrUpdate: saveConsultation, remove: removeConsultation } = useFirestore('consultations', [], { enabled: isLoggedIn });
+  const { data: reviews, addOrUpdate: saveReview, remove: removeReview } = useFirestore('reviews', DEFAULT_REVIEWS, { enabled: isLoggedIn });
 
   // Popup Management State
   const [isPopupModalOpen, setIsPopupModalOpen] = useState(false);
   const [editingPopup, setEditingPopup] = useState<any>(null);
+  const [popupToDelete, setPopupToDelete] = useState<{ id: any; title: string } | null>(null);
+  const [isDeletingPopup, setIsDeletingPopup] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lawyerFileInputRef = useRef<HTMLInputElement>(null);
   const caseFileInputRef = useRef<HTMLInputElement>(null);
@@ -142,20 +161,36 @@ export default function Admin() {
     }
   };
 
-  const handleDeletePopup = async (id: any) => {
-    if (window.confirm('정말 삭제하시겠습니까?')) {
-      try {
-        await removePopup(id);
-        toast.success('팝업이 삭제되었습니다.');
-      } catch (error) {
-        console.error('Delete popup error:', error);
-        toast.error('삭제 중 오류가 발생했습니다.');
-      }
+  const handleDeletePopup = (id: any, title?: string) => {
+    setPopupToDelete({ id, title: title || '이 팝업' });
+  };
+
+  const handleConfirmDeletePopup = async () => {
+    if (!popupToDelete) return;
+    setIsDeletingPopup(true);
+    try {
+      await removePopup(popupToDelete.id);
+      toast.success('팝업이 성공적으로 삭제되었습니다.');
+      setPopupToDelete(null);
+    } catch (error) {
+      console.error('Delete popup error:', error);
+      toast.error('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setIsDeletingPopup(false);
     }
   };
 
   const handleEditPopup = (popup: any) => {
-    setEditingPopup({ ...popup });
+    setEditingPopup({
+      titleFontSize: '24px',
+      titleFontWeight: '700',
+      titleColor: '#ffffff',
+      contentFontSize: '16px',
+      contentFontWeight: '400',
+      contentColor: '#cbd5e1',
+      textAlign: 'left',
+      ...popup
+    });
     setIsPopupModalOpen(true);
   };
 
@@ -164,11 +199,18 @@ export default function Admin() {
       id: Date.now(),
       title: '',
       content: '',
-      imageUrl: 'https://picsum.photos/seed/' + Date.now() + '/800/450',
+      imageUrl: '',
       isActive: true,
       link: '/consultation',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      titleFontSize: '24px',
+      titleFontWeight: '700',
+      titleColor: '#ffffff',
+      contentFontSize: '16px',
+      contentFontWeight: '400',
+      contentColor: '#cbd5e1',
+      textAlign: 'left'
     });
     setIsPopupModalOpen(true);
   };
@@ -836,25 +878,51 @@ export default function Admin() {
         {activeTab === 'popups' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {popups.map((popup) => (
-              <div key={popup.id} className="bg-[#0a0f18] border border-white/5 rounded-2xl overflow-hidden group">
-                <div className="aspect-video relative overflow-hidden">
-                  <img src={popup.imageUrl} alt={popup.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                  <div className="absolute top-4 right-4">
+              <div key={popup.id} className="bg-[#0a0f18] border border-white/5 rounded-2xl overflow-hidden group flex flex-col">
+                {popup.imageUrl ? (
+                  <div className="aspect-video relative overflow-hidden">
+                    <img src={popup.imageUrl} alt={popup.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                    <div className="absolute top-4 right-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${popup.isActive ? 'bg-green-500 text-white' : 'bg-slate-600 text-white'}`}>
+                        {popup.isActive ? '활성화' : '비활성화'}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-white/5 border-b border-white/5 flex justify-between items-center">
+                    <span className="text-xs text-slate-400 font-medium">텍스트 전용 팝업</span>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${popup.isActive ? 'bg-green-500 text-white' : 'bg-slate-600 text-white'}`}>
                       {popup.isActive ? '활성화' : '비활성화'}
                     </span>
                   </div>
-                </div>
-                <div className="p-6">
-                  <h4 className="text-lg font-bold text-white mb-2">{popup.title}</h4>
-                  <p className="text-slate-400 text-sm mb-6 line-clamp-2">{popup.content}</p>
+                )}
+                <div className="p-6 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h4 
+                      style={{
+                        color: popup.titleColor || '#ffffff',
+                        fontWeight: popup.titleFontWeight || '700'
+                      }}
+                      className="text-lg mb-2 break-keep line-clamp-2"
+                    >
+                      {renderMultilineText(popup.title)}
+                    </h4>
+                    <div 
+                      style={{
+                        color: popup.contentColor || '#94a3b8'
+                      }}
+                      className="text-sm mb-6 line-clamp-3 break-keep leading-relaxed"
+                    >
+                      {renderMultilineText(popup.content)}
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <button 
                       onClick={() => handleEditPopup(popup)}
                       className="flex-1 bg-white/5 hover:bg-white/10 text-white py-2 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2"
                     >
                       <Edit2 className="w-4 h-4" />
-                      수정
+                      수정 및 서식 설정
                     </button>
                     <button 
                       onClick={() => handleTogglePopup(popup.id)}
@@ -863,170 +931,64 @@ export default function Admin() {
                       {popup.isActive ? '비활성화' : '활성화'}
                     </button>
                     <button 
-                      onClick={() => handleDeletePopup(popup.id)}
-                      className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors"
+                      onClick={() => handleDeletePopup(popup.id, popup.title)}
+                      className="px-3 py-2 bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white rounded-lg text-sm font-bold transition-all flex items-center gap-1.5 shrink-0"
+                      title="팝업 삭제"
                     >
                       <Trash2 className="w-4 h-4" />
+                      <span>삭제</span>
                     </button>
                   </div>
                 </div>
               </div>
             ))}
+
+            {popups.length === 0 && (
+              <div className="border border-dashed border-white/10 rounded-2xl p-8 text-center bg-white/[0.02] flex flex-col items-center justify-center min-h-[220px]">
+                <div className="w-12 h-12 rounded-full bg-slate-800/80 text-slate-400 flex items-center justify-center mb-3">
+                  <AlertTriangle className="w-6 h-6 text-amber-400" />
+                </div>
+                <h4 className="text-white font-bold text-base mb-1">등록된 팝업이 없습니다</h4>
+                <p className="text-slate-400 text-xs sm:text-sm">우측의 [새 팝업 추가] 버튼을 눌러 사이트 팝업을 등록해주세요.</p>
+              </div>
+            )}
+
             <button 
               onClick={handleAddPopup}
-              className="border-2 border-dashed border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 text-slate-500 hover:border-red-500/30 hover:text-red-500 transition-all group"
+              className="border-2 border-dashed border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 text-slate-500 hover:border-red-500/30 hover:text-red-500 transition-all group min-h-[220px]"
             >
               <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-red-500/10 transition-colors">
                 <Plus className="w-6 h-6" />
               </div>
-              <span className="font-bold">새 팝업 추가</span>
+              <span className="font-bold">새 팝업 추가 및 서식 작성</span>
             </button>
           </div>
         )}
       </main>
 
-      {/* Popup Edit Modal */}
+      {/* Popup Edit Modal with live preview, line breaks, colors, font sizes, weights, and special characters */}
       <AnimatePresence>
         {isPopupModalOpen && editingPopup && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-5 bg-black/80 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[#0a0f18] border border-white/10 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl"
-            >
-              <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Monitor className="w-5 h-5 text-red-500" />
-                  팝업 설정
-                </h3>
-                <button onClick={() => setIsPopupModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              <form onSubmit={handleSavePopup} className="p-8 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-400 mb-2">팝업 제목</label>
-                      <input 
-                        type="text" 
-                        value={editingPopup.title}
-                        onChange={(e) => setEditingPopup({ ...editingPopup, title: e.target.value })}
-                        className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors"
-                        placeholder="예: 24시간 긴급 상담 안내"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-400 mb-2">팝업 내용</label>
-                      <textarea 
-                        value={editingPopup.content}
-                        onChange={(e) => setEditingPopup({ ...editingPopup, content: e.target.value })}
-                        className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors h-32 resize-none"
-                        placeholder="팝업에 표시될 상세 내용을 입력하세요."
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-2">시작일</label>
-                        <input 
-                          type="date" 
-                          value={editingPopup.startDate}
-                          onChange={(e) => setEditingPopup({ ...editingPopup, startDate: e.target.value })}
-                          className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-2">종료일</label>
-                        <input 
-                          type="date" 
-                          value={editingPopup.endDate}
-                          onChange={(e) => setEditingPopup({ ...editingPopup, endDate: e.target.value })}
-                          className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-400 mb-2 flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <ImageIcon className="w-4 h-4" />
-                          이미지 설정
-                        </span>
-                        <button 
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="text-xs text-red-500 hover:underline flex items-center gap-1"
-                        >
-                          <Upload className="w-3 h-3" />
-                          파일 업로드
-                        </button>
-                      </label>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef}
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        accept="image/*"
-                      />
-                      <div className="mt-2 aspect-video rounded-xl bg-slate-800 overflow-hidden border border-white/5 relative">
-                        <img src={editingPopup.imageUrl} alt="미리보기" className="w-full h-full object-cover" onError={(e: any) => e.target.src = 'https://via.placeholder.com/800x450?text=Invalid+Image+URL'} />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                          <Upload className="w-8 h-8 text-white" />
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
-                        <LinkIcon className="w-4 h-4" />
-                        연결 링크
-                      </label>
-                      <input 
-                        type="text" 
-                        value={editingPopup.link}
-                        onChange={(e) => setEditingPopup({ ...editingPopup, link: e.target.value })}
-                        className="w-full bg-[#141b29] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors"
-                        placeholder="예: /consultation"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/5">
-                  <input 
-                    type="checkbox" 
-                    id="isActive"
-                    checked={editingPopup.isActive}
-                    onChange={(e) => setEditingPopup({ ...editingPopup, isActive: e.target.checked })}
-                    className="w-5 h-5 accent-red-600"
-                  />
-                  <label htmlFor="isActive" className="text-white font-medium cursor-pointer">이 팝업을 즉시 활성화합니다.</label>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button 
-                    type="button"
-                    onClick={() => setIsPopupModalOpen(false)}
-                    className="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-2xl transition-colors"
-                  >
-                    취소
-                  </button>
-                  <button 
-                    type="submit"
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-2xl transition-colors shadow-lg shadow-red-600/20"
-                  >
-                    설정 저장하기
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
+          <PopupEditModal
+            isOpen={isPopupModalOpen}
+            onClose={() => {
+              setIsPopupModalOpen(false);
+              setEditingPopup(null);
+            }}
+            popup={editingPopup}
+            onSave={async (updatedPopup) => {
+              await savePopup(updatedPopup);
+              setIsPopupModalOpen(false);
+              setEditingPopup(null);
+              toast.success('팝업 및 서식 설정이 저장되었습니다.');
+            }}
+            onDelete={async (id) => {
+              await removePopup(id);
+              setIsPopupModalOpen(false);
+              setEditingPopup(null);
+              toast.success('팝업이 성공적으로 삭제되었습니다.');
+            }}
+          />
         )}
       </AnimatePresence>
 
@@ -1495,6 +1457,67 @@ export default function Admin() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal for Popup */}
+      <AnimatePresence>
+        {popupToDelete && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="w-full max-w-md bg-[#0d1424] border border-red-500/20 rounded-2xl p-6 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">팝업 삭제</h3>
+                  <p className="text-xs text-slate-400">선택한 팝업을 영구 삭제합니다.</p>
+                </div>
+              </div>
+
+              <div className="bg-black/30 border border-white/5 rounded-xl p-3.5">
+                <p className="text-xs text-slate-400 mb-1">삭제 대상 팝업:</p>
+                <p className="text-sm font-semibold text-white break-keep line-clamp-2">
+                  {popupToDelete.title || '(제목 없는 팝업)'}
+                </p>
+              </div>
+
+              <p className="text-xs text-red-400/90 leading-relaxed">
+                ※ 삭제된 팝업은 복구할 수 없으며, 사용자 메인 화면에서도 즉시 노출이 중단됩니다.
+              </p>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPopupToDelete(null)}
+                  disabled={isDeletingPopup}
+                  className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl text-sm font-bold transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeletePopup}
+                  disabled={isDeletingPopup}
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-red-600/20 flex items-center gap-2"
+                >
+                  {isDeletingPopup ? (
+                    <span>삭제 중...</span>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>삭제 확인</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
